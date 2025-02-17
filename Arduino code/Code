@@ -1,0 +1,192 @@
+#include "GY521.h"
+#include <Wire.h>
+
+GY521 sensor(0x68); 
+int R1 = 12;         
+int R2 = 6;
+int L1 = 8;
+int L2 = 5;
+int pwmL = 10;
+int pwmR = 11;
+int L = 200; 
+int R = 200;  
+int ENCR = 2;
+int ENCL = 3;
+volatile long ENCRC = 0;
+volatile long ENCLC = 0;
+void g();
+void f();
+void h();
+void r();
+void l();
+void s();
+void updateEncoderRight() {
+    ENCRC++;
+}
+
+void updateEncoderLeft() {
+    ENCLC++;
+}
+void setup() {
+    Serial.begin(115200);
+    Serial.println("Initializing GY521 Controlled Car");
+    Wire.begin();
+    while (!sensor.wakeup()) {
+        Serial.println("Error: Unable to connect to GY521. Check address (0x68/0x69)");
+        delay(1000);
+    }
+    pinMode(ENCR, INPUT_PULLUP);
+    pinMode(ENCL, INPUT_PULLUP);
+    attachInterrupt(digitalPinToInterrupt(ENCR), updateEncoderRight, RISING);
+    attachInterrupt(digitalPinToInterrupt(ENCL), updateEncoderLeft, RISING);
+    
+    sensor.setAccelSensitivity(2);  
+    sensor.setGyroSensitivity(1);  
+    sensor.setThrottle();
+    sensor.calibrate(1);
+    sensor.axe = -0.056;
+    sensor.aye = -0.025;
+    sensor.aze = 1.984;
+    sensor.gxe = 5.9035;
+    sensor.gye = -1.689;
+    sensor.gze = 0.157;
+    pinMode(L1, OUTPUT);
+    pinMode(L2, OUTPUT);
+    pinMode(R1, OUTPUT);
+    pinMode(R2, OUTPUT);
+    pinMode(pwmL, OUTPUT);
+    pinMode(pwmR, OUTPUT);
+    while (digitalRead(4) == LOW) {
+      delay(10);
+    }
+    sensor.reset();
+    f(2.5);
+    r();
+    f(1);
+    l();
+    f(2);
+    l();
+    f(1);
+    l();
+    f(2.5);
+    r();
+    l();
+    f(2);
+}
+
+void loop() {
+  
+}
+void f(float t) {
+  digitalWrite(L1, HIGH);
+  digitalWrite(L2, LOW);
+  digitalWrite(R1,LOW);
+  digitalWrite(R2, HIGH);
+  ENCRC = 0;
+  ENCLC = 0;
+  R = 230;
+  L = 230;
+  analogWrite(pwmR, R);
+  analogWrite(pwmL, L);
+  delay(200);
+  while(!(ENCLC > t*1292 && ENCRC > t*1292)){
+    if(ENCLC > ENCRC){
+      if(L <= 230)L++;
+      else R--;
+    }
+    else if(ENCRC > ENCLC){
+      if(R <= 230)R++;
+      else L--;
+    }
+    analogWrite(pwmL,L);
+    analogWrite(pwmR,R);
+    if(ENCLC > t*1292){
+       digitalWrite(L1, LOW);
+       digitalWrite(L2, LOW);
+    }
+    else if(ENCRC > t*1292){
+      digitalWrite(R1,LOW);
+      digitalWrite(R2,LOW);
+    }
+  }
+  digitalWrite(L1, LOW);
+  digitalWrite(L2, HIGH);
+  digitalWrite(R1, HIGH);
+  digitalWrite(R2, LOW);
+  while (ENCR > (t*1292+1)){
+    L = 200;
+    analogWrite(pwmR, L);
+    digitalWrite(R1, HIGH);
+    digitalWrite(R2, LOW);
+    Serial.println(ENCL);
+  }
+  while (ENCL > (t*1292+1)){
+    R = 200;
+    analogWrite(pwmL, R);
+    digitalWrite(L1, LOW);
+    digitalWrite(L2, HIGH);
+    Serial.println(ENCL);
+  }
+  digitalWrite(L1, LOW);
+  digitalWrite(L2, LOW);
+  digitalWrite(R1, LOW);
+  digitalWrite(R2, LOW);
+  delay(1000);
+}
+void r() {
+    R = 220;
+    L = 220;
+    analogWrite(pwmL, L);
+    analogWrite(pwmR, R);
+    digitalWrite(L1, LOW);
+    digitalWrite(L2, HIGH);
+    digitalWrite(R1, LOW);
+    digitalWrite(R2, HIGH);
+    while (true) {
+        sensor.read();
+        float yaw = sensor.getYaw();
+        if (yaw > 91 && yaw < 209) {
+            break;
+        }
+    }
+    digitalWrite(L1, HIGH);
+    digitalWrite(L2, LOW);
+    digitalWrite(R1, HIGH);
+    digitalWrite(R2, LOW);
+    delay(120);
+    digitalWrite(L1, LOW);
+    digitalWrite(L2, LOW);
+    digitalWrite(R1, LOW);
+    digitalWrite(R2, LOW);
+    delay(1000);
+    sensor.reset();
+}
+
+void l() {
+    R = 220;
+    L = 220;
+    analogWrite(pwmL, L);
+    analogWrite(pwmR, R);
+    digitalWrite(L1, HIGH);
+    digitalWrite(L2, LOW);
+    digitalWrite(R1, HIGH);
+    digitalWrite(R2, LOW);
+    while (true) {
+        sensor.read();
+        float yaw = sensor.getYaw();
+        if (yaw < 255 && yaw>159) {
+            break;
+        }
+    }
+    digitalWrite(L1, LOW);
+    digitalWrite(L2, HIGH);
+    digitalWrite(R1, LOW);
+    digitalWrite(R2, HIGH);
+    delay(120);
+    digitalWrite(L1, LOW);
+    digitalWrite(L2, LOW);
+    digitalWrite(R1, LOW);
+    digitalWrite(R2, LOW);
+    delay(1000);
+    sensor.reset();
+}
