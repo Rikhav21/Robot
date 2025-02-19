@@ -17,5 +17,8 @@ Button is connected between 4 and 5V
 The Gyroscope is connected to SDA and SCL
 The GND< and %V are all connected to the one on my motor driver. 
 The Battery's 9V is supplied to my motor driver.
+## Update
+I finished a basic claw with a servo, that is connected to pin number 9.
 ## Nect steps
-In the future I am going to work on a claw and adding back a distance sensor, so please check in again later. 
+In the future I am going to work on
+adding a distance sensor, so please check in again later. 
